@@ -1,61 +1,70 @@
-// ------------------ RANGY ------------------------
+const logosContentInit = () => {
 
-function initRangy(){
-  rangy.init();
+  // ------------------ RANGY ------------------------
 
-  highlighter = rangy.createHighlighter();
+  class RangyWrapper {
+    constructor() {
+      rangy.init();
 
-  addHighlighterClass('yellow')
+      this.highlighter = rangy.createHighlighter();
 
-  highlighter.addClassApplier(rangy.createClassApplier("rangy-highlight", {
-    ignoreWhiteSpace: true,
-    tagNames: ["span", "a"]
-  })); 
-}
+      this._addHighlighterClass('yellow')
 
-function addHighlighterClass(color){
-  const s = document.createElement('style');
-  const css = `.rangy-highlight { background-color: ${color} }`
-  s.setAttribute('type', 'text/css');
+      this.highlighter.addClassApplier(rangy.createClassApplier("rangy-highlight", {
+        ignoreWhiteSpace: true,
+        tagNames: ["span", "a"]
+      }));    
+    }
 
-  if ('textContent' in s) {
-    s.textContent = css;
-  } else {
-    s.styleSheet.cssText = css;
+    _addHighlighterClass(color){
+      const s = document.createElement('style');
+      const css = `.rangy-highlight { background-color: ${color} }`
+      s.setAttribute('type', 'text/css');
+
+      if ('textContent' in s) {
+        s.textContent = css;
+      } else {
+        s.styleSheet.cssText = css;
+      }
+
+      document.getElementsByTagName('head')[0].appendChild(s);
+    }
+
+    getSelectionText(){
+      return rangy.getSelection().toString();
+    }
+
+    highlightSelection() {
+      this.highlighter.highlightSelection("rangy-highlight");
+    }
+
+    serializeSelection(){
+      return rangy.serializeSelection();
+    }
   }
 
-  document.getElementsByTagName('head')[0].appendChild(s);
-}
+  // ----------------------- Messages ---------------------------
 
-function getSelectionText(){
-  return rangy.getSelection().toString();
-}
-
-function highlightSelection() {
-  highlighter.highlightSelection("rangy-highlight");
-}
-
-function serializeSelection(){
-  return rangy.serializeSelection();
-}
-
-
-// ----------------------- Messages ---------------------------
-
-const msgHandler = (message, sender, sendResponse) => { 
-  const { action } = message;
-  switch(action){
-    case 'highlight':
-      highlightSelection();
-      serializeSelection();
-      break;
-    case 'translate':
-      break;
-      translate();
-    default:
-      return
+  const createMsgHandler = (rw) => {
+    return (message, sender, sendResponse) => { 
+      const { action } = message;
+      switch(action){
+        case 'highlight':
+          rw.highlightSelection();
+          rw.serializeSelection();
+          break;
+        case 'translate':
+          break;
+        default:
+          return
+      }
+    }
   }
+
+  const rangyWrapper = new RangyWrapper();
+  const msgHandler = createMsgHandler(rangyWrapper);
+  chrome.runtime.onMessage.addListener(msgHandler);
+
 }
 
-initRangy()
-chrome.runtime.onMessage.addListener(msgHandler);
+logosContentInit();
