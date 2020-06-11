@@ -1,6 +1,6 @@
 const logosContentInit = () => {
 
-  // ------------------ RANGY ------------------------
+  // ------------------------- RANGY ----------------------------
 
   class RangyWrapper {
     constructor() {
@@ -43,7 +43,29 @@ const logosContentInit = () => {
     }
   }
 
-  // ----------------------- Messages ---------------------------
+  // -------------------- CHROME STORAGE -----------------------
+
+  async function storageSet(key, value) {
+    return new Promise(function(resolve, reject){
+      chrome.storage.sync.set({[key]: value}, function() {
+        if (chrome.runtime.lastError) { 
+          reject(chrome.runtime.lastError) 
+        } else {
+          resolve({[key]: value});
+        }
+      });
+    });
+  }
+
+  async function storageGet(key, value) {
+    return new Promise(function(resolve, reject){
+      chrome.storage.sync.get([key], function(result) {
+        resolve(result);
+      });
+    });
+  }
+
+  // ----------------------- MESSAGES --------------------------
 
   const createMsgHandler = (rw) => {
     return (message, sender, sendResponse) => { 
@@ -51,7 +73,7 @@ const logosContentInit = () => {
       switch(action){
         case 'highlight':
           rw.highlightSelection();
-          rw.serializeSelection();
+          const selection = rw.serializeSelection();
           break;
         case 'translate':
           break;

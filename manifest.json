@@ -10,7 +10,8 @@
     "128": "icons/main_128x128.png"
   },
   "permissions": [
-    "contextMenus"
+    "contextMenus",
+    "storage"
   ],
   "background": {
     "scripts": ["background.js"],
