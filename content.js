@@ -27,12 +27,16 @@ function addHighlighterClass(color){
   document.getElementsByTagName('head')[0].appendChild(s);
 }
 
-function highlightSelectedText() {
+function getSelectionText(){
+  return rangy.getSelection().toString();
+}
+
+function highlightSelection() {
   highlighter.highlightSelection("rangy-highlight");
 }
 
 function serializeSelection(){
-  console.log(rangy.serializeSelection());
+  return rangy.serializeSelection();
 }
 
 
@@ -42,7 +46,7 @@ const msgHandler = (message, sender, sendResponse) => {
   const { action } = message;
   switch(action){
     case 'highlight':
-      highlightSelectedText();
+      highlightSelection();
       serializeSelection();
       break;
     case 'translate':
