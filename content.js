@@ -39,18 +39,18 @@ function serializeSelection(){
 // ----------------------- Messages ---------------------------
 
 const msgHandler = (message, sender, sendResponse) => { 
-	const { action } = message;
-	switch(action){
-		case 'highlight':
-			highlightSelectedText();
+  const { action } = message;
+  switch(action){
+    case 'highlight':
+      highlightSelectedText();
       serializeSelection();
-			break;
-		case 'translate':
-			break;
-			translate();
-		default:
-			return
-	}
+      break;
+    case 'translate':
+      break;
+      translate();
+    default:
+      return
+  }
 }
 
 initRangy()
