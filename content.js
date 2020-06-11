@@ -1,4 +1,35 @@
 const logosContentInit = () => {
+  // ----------------------- UTILS -----------------------------
+
+  const objectIsEmpty = obj => Object.keys(obj).length === 0 && obj.constructor === Object;
+
+  // -------------------- CHROME STORAGE -----------------------
+
+  class ChromeStorageWrapper {
+    set(key, value) {
+      return new Promise(function(resolve, reject){
+        chrome.storage.sync.set({[key]: value}, function() {
+          if (chrome.runtime.lastError) { 
+            reject(chrome.runtime.lastError) 
+          } else {
+            resolve({[key]: value});
+          }
+        });
+      });
+    }
+
+    get(key, value) {
+      return new Promise(function(resolve, reject){
+        chrome.storage.sync.get([key], function(result) {
+          if (chrome.runtime.lastError) { 
+            reject(chrome.runtime.lastError) 
+          } else {
+            objectIsEmpty(result) ? resolve(null) : resolve(result[key]);
+          }
+        });
+      });
+    }
+  }
 
   // ------------------------- RANGY ----------------------------
 
@@ -39,41 +70,65 @@ const logosContentInit = () => {
     }
 
     serializeSelection(){
-      return rangy.serializeSelection();
+      var selObj = rangy.getSelection();
+      return rangy.serializeSelection(selObj, true)
+    }
+
+    deserializeSelection(serializedSelection){
+      return rangy.deserializeSelection(serializedSelection);
     }
   }
 
-  // -------------------- CHROME STORAGE -----------------------
+  // ------------------------- LOGOS ---------------------------
 
-  async function storageSet(key, value) {
-    return new Promise(function(resolve, reject){
-      chrome.storage.sync.set({[key]: value}, function() {
-        if (chrome.runtime.lastError) { 
-          reject(chrome.runtime.lastError) 
-        } else {
-          resolve({[key]: value});
-        }
-      });
-    });
-  }
+  class Logos {
+    constructor(chromeStorageWrapper, rangyWrapper) {
+      this.storage = chromeStorageWrapper;
+      this.rangy = rangyWrapper;
+      this._init();
+    }
 
-  async function storageGet(key, value) {
-    return new Promise(function(resolve, reject){
-      chrome.storage.sync.get([key], function(result) {
-        resolve(result);
-      });
-    });
+    async _saveSelection(selection){
+      const url = window.location.href;
+
+      const pageData = await this.storage.get(url);
+      
+      let newPageData;
+
+      pageData ? newPageData = { ...pageData, [selection]: {translation: ''} } : 
+        newPageData = { [selection]: { translation: ''} };
+      
+      return this.storage.set(url, newPageData)
+    }
+
+    async _init(){
+      const url = window.location.href;
+
+      const pageData = await this.storage.get(url);
+
+      if (pageData) {
+        Object.keys(pageData).forEach(key => {
+          this.rangy.deserializeSelection(key);
+          this.rangy.highlightSelection();
+        })
+      }
+    }
+
+    highlight(){
+      const selection = this.rangy.serializeSelection();
+      this.rangy.highlightSelection();
+      return this._saveSelection(selection)
+    }
   }
 
   // ----------------------- MESSAGES --------------------------
 
-  const createMsgHandler = (rw) => {
+  const createMsgHandler = (logos) => {
     return (message, sender, sendResponse) => { 
       const { action } = message;
       switch(action){
         case 'highlight':
-          rw.highlightSelection();
-          const selection = rw.serializeSelection();
+          logos.highlight().catch(console.error)
           break;
         case 'translate':
           break;
@@ -83,9 +138,14 @@ const logosContentInit = () => {
     }
   }
 
+  const chromeStorageWrapper = new ChromeStorageWrapper();
   const rangyWrapper = new RangyWrapper();
-  const msgHandler = createMsgHandler(rangyWrapper);
+  const logos = new Logos(chromeStorageWrapper, rangyWrapper); 
+  const msgHandler = createMsgHandler(logos);
+
   chrome.runtime.onMessage.addListener(msgHandler);
+
+  // rangyWrapper.deserializeSelection('0/1/1/1/1/5/1/1/9/2:0,0/1/1/1/1/5/1/1/9/2:11')
 
 }
 
