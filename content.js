@@ -88,15 +88,15 @@ const logosContentInit = () => {
       this._init();
     }
 
-    async _saveSelection(selection){
+    async _saveSelection(serializedSelection){
       const url = window.location.href;
 
       const pageData = await this.storage.get(url);
       
       let newPageData;
 
-      pageData ? newPageData = { ...pageData, [selection]: {translation: ''} } : 
-        newPageData = { [selection]: { translation: ''} };
+      pageData ? newPageData = { ...pageData, [serializedSelection]: {translation: ''} } : 
+        newPageData = { [serializedSelection]: { translation: ''} };
       
       return this.storage.set(url, newPageData)
     }
@@ -115,9 +115,9 @@ const logosContentInit = () => {
     }
 
     highlight(){
-      const selection = this.rangy.serializeSelection();
+      const serializedSelection = this.rangy.serializeSelection();
       this.rangy.highlightSelection();
-      return this._saveSelection(selection)
+      return this._saveSelection(serializedSelection)
     }
   }
 
@@ -144,9 +144,6 @@ const logosContentInit = () => {
   const msgHandler = createMsgHandler(logos);
 
   chrome.runtime.onMessage.addListener(msgHandler);
-
-  // rangyWrapper.deserializeSelection('0/1/1/1/1/5/1/1/9/2:0,0/1/1/1/1/5/1/1/9/2:11')
-
 }
 
 logosContentInit();
