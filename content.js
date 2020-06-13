@@ -6,8 +6,8 @@ const logosContentInit = () => {
     objectIsEmpty: (obj) => { Object.keys(obj).length === 0 && obj.constructor === Object; },
 
     clearSelection: () => {
-      if (window.getSelection) { window.getSelection().removeAllRanges() }
-      else if (document.selection) { document.selection.empty() }
+      if (window.getSelection) { window.getSelection().removeAllRanges(); }
+      else if (document.selection) { document.selection.empty(); }
     }   
   }
 
@@ -19,7 +19,7 @@ const logosContentInit = () => {
       return new Promise(function(resolve, reject){
         chrome.storage.sync.set({[key]: value}, function() {
           if (chrome.runtime.lastError) { 
-            reject(chrome.runtime.lastError) 
+            reject(chrome.runtime.lastError); 
           } else {
             resolve({[key]: value});
           }
@@ -58,7 +58,14 @@ const logosContentInit = () => {
 
     _addHighlighterClass(color){
       const s = document.createElement('style');
-      const css = `.logos-highlight { background-color: ${color} }`
+
+      const css = `
+        .logos-highlight { 
+          background-color: ${color};
+          position: relative; 
+        }
+      `;
+
       s.setAttribute('type', 'text/css');
 
       if ('textContent' in s) {
@@ -81,14 +88,14 @@ const logosContentInit = () => {
     addDataAttributeToSelectedElements(name, value){
       const selectedElements = rangy.getSelection().getRangeAt(0).getNodes([1]);
       const highlighted = selectedElements.forEach(el => {
-        if (!el.classList.contains('logos-highlight')) return
+        if (!el.classList.contains('logos-highlight')) return;
         el.setAttribute(name, value);
       })
     }
 
     serializeSelection(){
       const selObj = rangy.getSelection();
-      return rangy.serializeSelection(selObj, true)
+      return rangy.serializeSelection(selObj, true);
     }
 
     deserializeSelection(serializedSelection){
@@ -96,7 +103,7 @@ const logosContentInit = () => {
     }
 
     getSelectionEndPosition(){
-      return rangy.getSelection().getEndClientPos()
+      return rangy.getSelection().getEndClientPos();
     }
   }
 
@@ -113,14 +120,14 @@ const logosContentInit = () => {
     */
 
     constructor(){
-      this.popupElement = this._createPopupElement()
+      this.popupElement = this._createPopupElement();
       this.styleElement = this._createPopupStyleElement();
       this.iframeElement = this._createPopupIframe();
       
-      this.popup = this._initIframe()
+      this.popup = this._initIframe();
       
-      this._attachTextAreaResizeObserver()
-      this._attachClickListener()
+      this._attachTextAreaResizeObserver();
+      this._attachClickListener();
 
       this.saveTranslationHandler = null;
     }
@@ -150,7 +157,7 @@ const logosContentInit = () => {
 
       popupElement.innerHTML = html;
 
-      return popupElement
+      return popupElement;
     }
 
     _createPopupStyleElement(){
@@ -261,7 +268,7 @@ const logosContentInit = () => {
     _attachTextAreaResizeObserver(){
       const textarea = this.popup.querySelector('.translation-textarea');
         
-      let resizing = false
+      let resizing = false;
 
       const resizeObserver = new ResizeObserver(entries => {
         for (const entry of entries) {
@@ -272,7 +279,7 @@ const logosContentInit = () => {
               resizing = true;
               this.iframeElement.width  = `${entry.contentRect.width + 6}px`;
               this.iframeElement.height = `${this.popupElement.offsetHeight + 6}px`;
-              setTimeout(() => resizing = false, 1)
+              setTimeout(() => resizing = false, 1);
             }
             
           }
@@ -283,7 +290,7 @@ const logosContentInit = () => {
     }
 
     _initIframe(){
-      document.body.appendChild(this.iframeElement)
+      document.body.appendChild(this.iframeElement);
 
       const iframeDoc = this.iframeElement.contentWindow.document;
       iframeDoc.head.appendChild(this.styleElement);
@@ -306,7 +313,7 @@ const logosContentInit = () => {
       this.saveTranslationHandler = handler;
     }
 
-    open({x, y}, cb){
+    open({x, y}){
       this.iframeElement.style.left = `${x - 150}px`;
       this.iframeElement.style.top = `${y + 10}px`;
       this.iframeElement.style.opacity = 1;
@@ -320,15 +327,141 @@ const logosContentInit = () => {
       setTimeout(() => {
         this.iframeElement.style.left = '-1000px';
         textarea.value = '';
-      }, 400)
+      }, 400);
     }
 
     save(){
-      const textarea = this.popupElement.querySelector('.translation-textarea')
+      const textarea = this.popupElement.querySelector('.translation-textarea');
       const translation = textarea.value;
       this.saveTranslationHandler(translation);
       this.close();
     }
+  }
+
+  // -------------------- TRANSLATION POPUP -------------------- 
+
+  class TranslationTooltip {
+    constructor(){
+      this.tooltipElement = this._createTooltipElement();
+      this.styleElement = this._createTooltipStyleElement();
+      this.iframeElement = this._createTooltipIframe();
+      
+      this.tooltip = this._initIframe();
+
+    }
+
+    _createTooltipElement(){
+      const el = document.createElement('div');
+  
+      el.id = 'popup';
+    
+      const html = `
+        <div class="tooltip">
+          <div class="arrow"></div>
+          <span class="text">Tooltip text here</span>
+        </div>
+      `;
+
+      el.innerHTML = html;
+
+      return el;
+    }
+
+    _createTooltipStyleElement(){
+      const style = document.createElement('style');
+
+      const bgcolor = 'black';
+      const arrowWidth = 6;
+      
+      style.innerHTML = `
+        body, html {
+          padding: 0;
+          margin: 0;
+          overflow: hidden;
+        }
+
+        .tooltip {
+          background-color: ${bgcolor};
+          padding-right: 0;
+          text-align: center;
+          border-radius: 6px;
+          padding: 10px 5px;
+          position: relative;
+          margin-top: 15px;
+        }
+
+        .text {
+          color: white;
+        }
+
+        .arrow {
+          position: absolute;
+          top: -${arrowWidth*2}px;
+          left: 50%;
+          transform: translateX(-${arrowWidth}px);
+          border-width: ${arrowWidth}px;
+          border-style: solid;
+          border-color: transparent transparent ${bgcolor} transparent;
+        }
+
+      `
+
+      return style;
+    }
+
+    _createTooltipIframe(){
+      const iframe = document.createElement('iframe')
+
+      iframe.id = 'logos-translation-tooltip';
+      iframe.style.position = 'absolute';
+      iframe.style.top = '100px';
+      iframe.style.left = '-1000px'
+      iframe.style.padding = '0';
+      iframe.style.border = '0';
+      iframe.style.opacity = '1';
+      iframe.style.zIndex = '16777271';
+      iframe.style.WebkitTransition = 'opacity 0.3s';
+      iframe.style.MozTransition = 'opacity 0.3s';
+
+      return iframe;
+    }
+
+    _initIframe(){
+      document.body.appendChild(this.iframeElement);
+
+      const iframeDoc = this.iframeElement.contentWindow.document;
+      iframeDoc.head.appendChild(this.styleElement);
+      iframeDoc.body.appendChild(this.tooltipElement);
+
+      const textElement = this.tooltipElement.querySelector('.text');
+      this.iframeElement.width = textElement.offsetWidth + "px";
+
+      return iframeDoc;
+    }
+
+    open({x, y}){
+      const offset = this.tooltipElement.offsetWidth / 2
+      this.iframeElement.style.left = `${x - offset}px`;
+      this.iframeElement.style.top = `${y}px`;
+      this.iframeElement.style.opacity = 1;
+    }
+  
+    close(){
+      this.iframeElement.style.opacity = 0;
+      this.iframeElement.style.left = '-1000px';
+      this.clearText();
+    }
+
+    setText(str){
+      const textElement = this.tooltipElement.querySelector('.text');
+      textElement.innerText = str;
+    }
+
+    clearText(){
+      const textElement = this.tooltipElement.querySelector('.text');
+      textElement.innerText = '';
+    }
+
   }
 
   // ------------------------- LOGOS ---------------------------
@@ -346,8 +479,12 @@ const logosContentInit = () => {
       this.rangy = rangyWrapper;
 
       this._loadTranslationsAndHighlights();
+      this._addMouseOverListener();
+
       this.translationPopup = new TranslationPopup;
-      this.translationPopup.registerSaveTranslationHandler(this.saveTranslationHandler)
+      this.translationPopup.registerSaveTranslationHandler(this.saveTranslationHandler);
+
+      this.translationTooltip = new TranslationTooltip();
     }
 
     async _loadTranslationsAndHighlights(){
@@ -375,14 +512,33 @@ const logosContentInit = () => {
     async _saveSelection(serializedSelection, selectionText, translation){
       const url = window.location.href;
       const pageEntryArray = await this.storage.get(url);
-      const newEntry = { serializedSelection, selectionText, translation }
+      const newEntry = { serializedSelection, selectionText, translation };
       let newPageEntryArray;
 
       pageEntryArray ? 
         newPageEntryArray = [ ...pageEntryArray, newEntry ] : 
         newPageEntryArray = [ newEntry ];
       
-      return this.storage.set(url, newPageEntryArray)
+      return this.storage.set(url, newPageEntryArray);
+    }
+
+    _addMouseOverListener(){
+      document.body.addEventListener('mouseover', e => {
+        if ('logosTranslation' in e.target.dataset) {
+          const translation = e.target.dataset.logosTranslation;
+          const { pageX } = e;
+          const { top, height } = e.target.getBoundingClientRect();
+          const y = top + height + window.scrollY;
+          
+          e.target.addEventListener('mouseout', e => {
+            this.translationTooltip.close()
+            console.log('fired')
+          }, {once: true})
+
+          this.translationTooltip.setText(translation)
+          this.translationTooltip.open({x: pageX, y})
+        }
+      })
     }
 
     saveTranslationHandler = (translation) => {
@@ -391,20 +547,20 @@ const logosContentInit = () => {
       this.rangy.highlightSelection();
       this.rangy.addDataAttributeToSelectedElements('data-logos-translation', translation);
       utils.clearSelection();
-      return this._saveSelection(serializedSelection, selectionText, translation)
+      return this._saveSelection(serializedSelection, selectionText, translation);
     }
 
     highlight(){
-      const selectionText = this.rangy.getSelectionText()
+      const selectionText = this.rangy.getSelectionText();
       const serializedSelection = this.rangy.serializeSelection();
       this.rangy.highlightSelection();
       this.rangy.addDataAttributeToSelectedElements('data-logos-highlight', '');
       utils.clearSelection();
-      return this._saveSelection(serializedSelection, selectionText, '')
+      return this._saveSelection(serializedSelection, selectionText, '');
     }
 
     addTranslation(){
-      const targetPosition = this.rangy.getSelectionEndPosition()
+      const targetPosition = this.rangy.getSelectionEndPosition();
       this.translationPopup.open(targetPosition);
     }
   }
@@ -416,10 +572,10 @@ const logosContentInit = () => {
       const { action } = message;
       switch(action){
         case 'highlight':
-          logos.highlight().catch(console.error)
+          logos.highlight().catch(console.error);
           break;
         case 'addTranslation':
-          logos.addTranslation()
+          logos.addTranslation();
           break;
         default:
           return
