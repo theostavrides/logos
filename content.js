@@ -46,6 +46,17 @@ const logosContentInit = () => {
   // ------------------------- RANGY ---------------------------
 
   class RangyWrapper {
+
+    /* 
+      ### Public Methods ###
+      1. getSelectionText
+      2. highlightSelection
+      3. addDataAttributeToSelectedElements
+      4. serializeSelection
+      5. deserializeSelection
+      6. getSelectionEndPosition
+    */
+
     constructor() {
       rangy.init();
 
