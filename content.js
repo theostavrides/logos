@@ -124,15 +124,21 @@ const logosContentInit = () => {
     }
 
     _initTranslationPopup(){
+      const closeIconUrl = chrome.runtime.getURL("icons/close.svg");
+
       const html = `
-        <div class="logos-container">
-          <h5 class="logos-title">λ</h5>
+        <div class="grid">
+          <header>
+            <h5 class="logo">λ</h5>
+            <img class="close-icon" src="${closeIconUrl}"/>
+          </header>
+
           <textarea 
-            class="logos-translation-input" 
-            placeholder="Enter a custom translation..."
+            class="translation-textarea" 
+            placeholder="Enter a translation..."
             rows="3"
           ></textarea>
-          <button type="button" class="logos-translation-submit-button">Save</button>
+          <button type="button" class="save-button">save</button>
         </div>
       `;
 
@@ -143,21 +149,29 @@ const logosContentInit = () => {
           overflow: hidden;
         }
 
-        #logos-translation-popup {
+        #popup {
           display: block;
-          background-color: slategray;
+          background: rgb(86,104,120);
+          background: linear-gradient(90deg, rgba(86,104,120,0.969625350140056) 0%, rgba(142,168,174,0.9556197478991597) 50%, rgba(187,179,227,0.969625350140056) 100%);
           font-family: monospace;
-          border-color: gray;
+          border: 2px solid #a3a3a3;
         }
 
-        #logos-translation-popup .logos-container {
+        .grid {
           display: grid;
           grid-template-columns: 1fr;
         }
 
-        #logos-translation-popup .logos-title {
-          font-size: 12px;
-          line-height: 16px;
+        header {
+          display: flex;
+          justify-content: space-between;
+          cursor: grab;
+        }
+
+        .logo {
+          width: 10px;
+          font-size: 14px;
+          line-height: 20px;
           color: white;
           margin: 0;
           padding: 0 4px;
@@ -165,38 +179,70 @@ const logosContentInit = () => {
           text-align: left;
         }
 
-        #logos-translation-popup .logos-translation-input {
-          border-bottom: none;
-          border-color: inherit;
+        .close-icon {
+          height: 11px;
+          width: 11px;
+          padding: 5px;
+          opacity: 0.35;
+          cursor: pointer;
         }
 
-        #logos-translation-popup .logos-translation-submit-button {
+        .close-icon:hover {
+          opacity: 0.6;
+        }
+
+        .translation-textarea {
+          -webkit-transition: all 0.30s ease-in-out;
+          -moz-transition: all 0.30s ease-in-out;
+          -ms-transition: all 0.30s ease-in-out;
+          -o-transition: all 0.30s ease-in-out;
+          border: none;
+          outline: none;
+        }
+
+        textarea:focus::-webkit-input-placeholder { color:transparent; }
+        textarea:focus:-moz-placeholder { color:transparent; }
+        textarea:focus::-moz-placeholder { color:transparent; }
+        textarea:focus:-ms-input-placeholder { color:transparent; }
+
+        .translation-textarea:focus {
+          box-shadow: 0 0 3px rgba(54, 9, 235, 0.42)
+        }
+
+        .save-button {
+          border: none;
+          border-top: 1px solid grey;
+          font-family: monospace;
+          line-height: 20px;
         }
 
       `;
 
       const popup = document.createElement('div');
-      popup.id = 'logos-translation-popup';
+      popup.id = 'popup';
       popup.innerHTML = html
 
       const style = document.createElement('style');
       style.innerHTML = css;
 
-      const ifrm = document.createElement('iframe')
-      ifrm.id = 'logos-translation-popup';
-      ifrm.style.position = 'absolute';
-      ifrm.style.top = '0';
-      ifrm.style.padding = '0';
-      ifrm.style.zIndex = '16777271';
-    
-      document.body.appendChild(ifrm)
+      const iframe = document.createElement('iframe')
 
-      var doc = ifrm.contentWindow.document;
+      iframe.id = 'logos-translation-popup';
+      iframe.style.position = 'fixed';
+      iframe.style.top = '0';
+      iframe.style.padding = '0';
+      iframe.style.zIndex = '16777271';
+      iframe.style.border = '0';
+      iframe.style.display = 'none'
+    
+      document.body.appendChild(iframe)
+
+      var doc = iframe.contentWindow.document;
 
       doc.head.appendChild(style);
       doc.body.appendChild(popup);
 
-      ifrm.height = `${popup.offsetHeight}px`;
+      iframe.height = `${popup.offsetHeight}px`;
 
       function handleTextAreaResize() {
         let resizing = false
@@ -208,9 +254,9 @@ const logosContentInit = () => {
             } else {
               if (resizing === false) {
                 resizing = true;
-                ifrm.width  = `${entry.contentRect.width + 4}px`;
-                ifrm.height = `${popup.offsetHeight + 4}px`;
-                setTimeout(() => resizing = false, 20)
+                iframe.width  = `${entry.contentRect.width + 6}px`;
+                iframe.height = `${popup.offsetHeight + 6}px`;
+                setTimeout(() => resizing = false, 1)
               }
               
             }
@@ -220,9 +266,8 @@ const logosContentInit = () => {
         resizeObserver.observe(textarea);        
       }
 
-      const textarea = doc.querySelector('.logos-translation-input');
+      const textarea = doc.querySelector('.translation-textarea');
       handleTextAreaResize(textarea)
-
       
     }
 

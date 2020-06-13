@@ -28,5 +28,8 @@
         "content.js"
       ]
     }
+  ],
+  "web_accessible_resources": [
+    "icons/close.svg"
   ]
 }
