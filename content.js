@@ -1,5 +1,7 @@
 const logosContentInit = () => {
+
   // ----------------------- UTILS -----------------------------
+
   const utils = {
     objectIsEmpty: (obj) => { Object.keys(obj).length === 0 && obj.constructor === Object; },
 
@@ -77,7 +79,7 @@ const logosContentInit = () => {
     }
 
     addDataAttributeToSelectedElements(name, value){
-      var selectedElements = rangy.getSelection().getRangeAt(0).getNodes([1]);
+      const selectedElements = rangy.getSelection().getRangeAt(0).getNodes([1]);
       const highlighted = selectedElements.forEach(el => {
         if (!el.classList.contains('logos-highlight')) return
         el.setAttribute(name, value);
@@ -85,12 +87,16 @@ const logosContentInit = () => {
     }
 
     serializeSelection(){
-      var selObj = rangy.getSelection();
+      const selObj = rangy.getSelection();
       return rangy.serializeSelection(selObj, true)
     }
 
     deserializeSelection(serializedSelection){
       return rangy.deserializeSelection(serializedSelection);
+    }
+
+    getSelectionEndPosition(){
+      return rangy.getSelection().getEndClientPos()
     }
   }
 
@@ -98,15 +104,17 @@ const logosContentInit = () => {
 
   class TranslationPopup {
     constructor(){
-      const popupElement = this.createPopupElement()
-      const styleElement = this.createPopupStyleElement();
-      const iframeElement = this.createPopupIframe();
-
-      this.popup = this.initIframe(iframeElement, popupElement, styleElement)
-      this.attachTextAreaResizeHandler(iframeElement, popupElement)
+      this.popupElement = this._createPopupElement()
+      this.styleElement = this._createPopupStyleElement();
+      this.iframeElement = this._createPopupIframe();
+      
+      this.popup = this._initIframe()
+      
+      this._attachTextAreaResizeObserver()
+      this._attachClickListener()
     }
 
-    createPopupElement(){
+    _createPopupElement(){
       const closeIconUrl = chrome.runtime.getURL("icons/close.svg");
 
       const popupElement = document.createElement('div');
@@ -134,7 +142,7 @@ const logosContentInit = () => {
       return popupElement
     }
 
-    createPopupStyleElement(){
+    _createPopupStyleElement(){
       const style = document.createElement('style');
       
       style.innerHTML = `
@@ -216,21 +224,24 @@ const logosContentInit = () => {
       return style;
     }
 
-    createPopupIframe(){
+    _createPopupIframe(){
       const iframe = document.createElement('iframe')
 
       iframe.id = 'logos-translation-popup';
       iframe.style.position = 'fixed';
       iframe.style.top = '0';
+      iframe.style.left = '-1000px'
       iframe.style.padding = '0';
       iframe.style.zIndex = '16777271';
       iframe.style.border = '0';
-      // iframe.style.display = 'none'
+      iframe.style.opacity = '0';
+      iframe.style.WebkitTransition = 'opacity 0.3s';
+      iframe.style.MozTransition = 'opacity 0.3s';
 
       return iframe;
     }
 
-    attachTextAreaResizeHandler(iframe, popupHtmlElement){
+    _attachTextAreaResizeObserver(){
       const textarea = this.popup.querySelector('.translation-textarea');
         
       let resizing = false
@@ -242,8 +253,8 @@ const logosContentInit = () => {
           } else {
             if (resizing === false) {
               resizing = true;
-              iframe.width  = `${entry.contentRect.width + 6}px`;
-              iframe.height = `${popupHtmlElement.offsetHeight + 6}px`;
+              this.iframeElement.width  = `${entry.contentRect.width + 6}px`;
+              this.iframeElement.height = `${this.popupElement.offsetHeight + 6}px`;
               setTimeout(() => resizing = false, 1)
             }
             
@@ -254,18 +265,42 @@ const logosContentInit = () => {
       resizeObserver.observe(textarea);              
     }
 
-    initIframe(iframeElement, popupElement, styleElement){
-      document.body.appendChild(iframeElement)
+    _initIframe(){
+      document.body.appendChild(this.iframeElement)
 
-      const iframeDoc = iframeElement.contentWindow.document;
-      iframeDoc.head.appendChild(styleElement);
-      iframeDoc.body.appendChild(popupElement);
+      const iframeDoc = this.iframeElement.contentWindow.document;
+      iframeDoc.head.appendChild(this.styleElement);
+      iframeDoc.body.appendChild(this.popupElement);
 
-      iframeElement.height = `${popupElement.offsetHeight}px`;
+      this.iframeElement.height = `${this.popupElement.offsetHeight}px`;
 
       return iframeDoc;
-
     }
+
+    _attachClickListener(){
+      this.popupElement.addEventListener('click', (e) => {
+        const classList = e.target.classList;
+        if (classList.contains('close-icon')) this.close();
+        else if (classList.contains('save-button')) this.save();
+
+      })
+    }
+
+    open({x, y}, cb){
+      this.iframeElement.style.left = `${x - 150}px`;
+      this.iframeElement.style.top = `${y + 10}px`;
+      this.iframeElement.style.opacity = 1;
+    }
+
+    close(){
+      this.iframeElement.style.opacity = 0;
+
+      setTimeout(() => {
+        this.iframeElement.style.left = '-1000px';
+      }, 400)
+    }
+
+    save(){}
   }
 
   // ------------------------- LOGOS ---------------------------
@@ -317,12 +352,17 @@ const logosContentInit = () => {
       return this._saveSelection(serializedSelection, selectionText, '')
     }
 
-    translate(){
-      const selectionText = this.rangy.getSelectionText()
-      const serializedSelection = this.rangy.serializeSelection();
-      this.rangy.highlightSelection();
-      this.rangy.addDataAttributeToSelectedElements('data-logos-translation', translation);
-      return this._saveSelection(serializedSelection, selectionText, translation)
+    addTranslation(){
+      const saveTranslationClickHandler = () => {
+        const selectionText = this.rangy.getSelectionText();
+        const serializedSelection = this.rangy.serializeSelection();
+        this.rangy.highlightSelection();
+        this.rangy.addDataAttributeToSelectedElements('data-logos-translation', translation);
+        this._saveSelection(serializedSelection, selectionText, translation).catch(console.log)
+      }
+
+      const targetPosition = this.rangy.getSelectionEndPosition()
+      this.translationPopup.open(targetPosition, saveTranslationClickHandler);
     }
   }
 
@@ -335,8 +375,8 @@ const logosContentInit = () => {
         case 'highlight':
           logos.highlight().catch(console.error)
           break;
-        case 'translate':
-          logos.translate().catch(console.error)
+        case 'addTranslation':
+          logos.addTranslation()
           break;
         default:
           return
