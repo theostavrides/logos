@@ -7,8 +7,8 @@ function logosBackgroundInit(){
     });
 
     chrome.contextMenus.create({
-      "id": "translate",
-      "title": "Translate",
+      "id": "addTranslation",
+      "title": "Add Translation",
       "contexts": ["selection"]
     });
   }
@@ -18,9 +18,9 @@ function logosBackgroundInit(){
     const { url, title, id } = tab;
 
     switch(menuItemId) {
-      case 'translate':
+      case 'addTranslation':
         chrome.tabs.query({active: true, currentWindow: true}, tabs => {
-          chrome.tabs.sendMessage(tabs[0].id, {action: "translate"}, console.log);  
+          chrome.tabs.sendMessage(tabs[0].id, {action: "addTranslation"}, console.log);  
         });
         break
       case 'highlight':
