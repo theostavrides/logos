@@ -344,6 +344,15 @@ const logosContentInit = () => {
   // -------------------- TRANSLATION POPUP -------------------- 
 
   class TranslationTooltip {
+
+    /* 
+      ### Public Methods ###
+      1. open
+      2. close
+      3. setText
+      4. clearText
+    */
+
     constructor(){
       this.tooltipElement = this._createTooltipElement();
       this.styleElement = this._createTooltipStyleElement();
