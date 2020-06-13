@@ -8,7 +8,10 @@ const logosContentInit = () => {
     clearSelection: () => {
       if (window.getSelection) { window.getSelection().removeAllRanges(); }
       else if (document.selection) { document.selection.empty(); }
-    }   
+    },   
+
+    getCleanUrl: () => `${location.protocol}//${location.host}${location.pathname}`,
+
   }
 
 
@@ -488,7 +491,7 @@ const logosContentInit = () => {
     }
 
     async _loadTranslationsAndHighlights(){
-      const url = window.location.href;
+      const url = utils.getCleanUrl();
 
       const pageData = await this.storage.get(url);
 
@@ -510,7 +513,7 @@ const logosContentInit = () => {
     }
 
     async _saveSelection(serializedSelection, selectionText, translation){
-      const url = window.location.href;
+      const url = utils.getCleanUrl();
       const pageEntryArray = await this.storage.get(url);
       const newEntry = { serializedSelection, selectionText, translation };
       let newPageEntryArray;
