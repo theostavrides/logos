@@ -94,38 +94,25 @@ const logosContentInit = () => {
     }
   }
 
-  // ------------------------- LOGOS ---------------------------
+  // -------------------- TRANSLATION POPUP -------------------- 
 
-  class Logos {
-    constructor(chromeStorageWrapper, rangyWrapper) {
-      this.storage = chromeStorageWrapper;
-      this.rangy = rangyWrapper;
-      this._init();
+  class TranslationPopup {
+    constructor(){
+      const popupElement = this.createPopupElement()
+      const styleElement = this.createPopupStyleElement();
+      const iframeElement = this.createPopupIframe();
+
+      this.popup = this.initIframe(iframeElement, popupElement, styleElement)
+      this.attachTextAreaResizeHandler(iframeElement, popupElement)
     }
 
-    _init(){
-      this._loadTranslationsAndHighlights();
-      this._initTranslationPopup();
-    }
-
-    async _loadTranslationsAndHighlights(){
-      const url = window.location.href;
-
-      const pageData = await this.storage.get(url);
-
-      if (pageData) {
-        pageData.forEach(selectionEntry => {
-          this.rangy.deserializeSelection(selectionEntry.serializedSelection);
-          this.rangy.highlightSelection();
-        })
-      }
-
-      utils.clearSelection();
-    }
-
-    _initTranslationPopup(){
+    createPopupElement(){
       const closeIconUrl = chrome.runtime.getURL("icons/close.svg");
 
+      const popupElement = document.createElement('div');
+  
+      popupElement.id = 'popup';
+    
       const html = `
         <div class="grid">
           <header>
@@ -142,7 +129,15 @@ const logosContentInit = () => {
         </div>
       `;
 
-      const css = `
+      popupElement.innerHTML = html;
+
+      return popupElement
+    }
+
+    createPopupStyleElement(){
+      const style = document.createElement('style');
+      
+      style.innerHTML = `
         body, html {
           padding: 0;
           margin: 0;
@@ -218,13 +213,10 @@ const logosContentInit = () => {
 
       `;
 
-      const popup = document.createElement('div');
-      popup.id = 'popup';
-      popup.innerHTML = html
+      return style;
+    }
 
-      const style = document.createElement('style');
-      style.innerHTML = css;
-
+    createPopupIframe(){
       const iframe = document.createElement('iframe')
 
       iframe.id = 'logos-translation-popup';
@@ -233,43 +225,76 @@ const logosContentInit = () => {
       iframe.style.padding = '0';
       iframe.style.zIndex = '16777271';
       iframe.style.border = '0';
-      iframe.style.display = 'none'
-    
-      document.body.appendChild(iframe)
+      // iframe.style.display = 'none'
 
-      var doc = iframe.contentWindow.document;
+      return iframe;
+    }
 
-      doc.head.appendChild(style);
-      doc.body.appendChild(popup);
+    attachTextAreaResizeHandler(iframe, popupHtmlElement){
+      const textarea = this.popup.querySelector('.translation-textarea');
+        
+      let resizing = false
 
-      iframe.height = `${popup.offsetHeight}px`;
-
-      function handleTextAreaResize() {
-        let resizing = false
-
-        const resizeObserver = new ResizeObserver(entries => {
-          for (const entry of entries) {
-            if (entry.contentBoxSize) {
-              // TODO: handle edgecase for entry.contentBoxSize
-            } else {
-              if (resizing === false) {
-                resizing = true;
-                iframe.width  = `${entry.contentRect.width + 6}px`;
-                iframe.height = `${popup.offsetHeight + 6}px`;
-                setTimeout(() => resizing = false, 1)
-              }
-              
+      const resizeObserver = new ResizeObserver(entries => {
+        for (const entry of entries) {
+          if (entry.contentBoxSize) {
+            // TODO: handle edgecase for entry.contentBoxSize
+          } else {
+            if (resizing === false) {
+              resizing = true;
+              iframe.width  = `${entry.contentRect.width + 6}px`;
+              iframe.height = `${popupHtmlElement.offsetHeight + 6}px`;
+              setTimeout(() => resizing = false, 1)
             }
+            
           }
-        });
+        }
+      });
 
-        resizeObserver.observe(textarea);        
+      resizeObserver.observe(textarea);              
+    }
+
+    initIframe(iframeElement, popupElement, styleElement){
+      document.body.appendChild(iframeElement)
+
+      const iframeDoc = iframeElement.contentWindow.document;
+      iframeDoc.head.appendChild(styleElement);
+      iframeDoc.body.appendChild(popupElement);
+
+      iframeElement.height = `${popupElement.offsetHeight}px`;
+
+      return iframeDoc;
+
+    }
+  }
+
+  // ------------------------- LOGOS ---------------------------
+
+  class Logos {
+    constructor(chromeStorageWrapper, rangyWrapper) {
+      this.storage = chromeStorageWrapper;
+      this.rangy = rangyWrapper;
+
+      this._loadTranslationsAndHighlights();
+      this.translationPopup = new TranslationPopup
+    }
+
+    async _loadTranslationsAndHighlights(){
+      const url = window.location.href;
+
+      const pageData = await this.storage.get(url);
+
+      if (pageData) {
+        pageData.forEach(selectionEntry => {
+          this.rangy.deserializeSelection(selectionEntry.serializedSelection);
+          this.rangy.highlightSelection();
+        })
       }
 
-      const textarea = doc.querySelector('.translation-textarea');
-      handleTextAreaResize(textarea)
-      
+      utils.clearSelection();
     }
+
+    
 
     async _saveSelection(serializedSelection, selectionText, translation){
       const url = window.location.href;
