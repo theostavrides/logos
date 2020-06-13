@@ -484,6 +484,7 @@ const logosContentInit = () => {
       ### Public Methods ###
       1. highlight
       2. addTranslation
+      3. saveTranslationHandler
     */
 
     constructor(chromeStorageWrapper, rangyWrapper) {
