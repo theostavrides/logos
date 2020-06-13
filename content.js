@@ -1,7 +1,14 @@
 const logosContentInit = () => {
   // ----------------------- UTILS -----------------------------
+  const utils = {
+    objectIsEmpty: (obj) => { Object.keys(obj).length === 0 && obj.constructor === Object; },
 
-  const objectIsEmpty = obj => Object.keys(obj).length === 0 && obj.constructor === Object;
+    clearSelection: () => {
+      if (window.getSelection) { window.getSelection().removeAllRanges() }
+      else if (document.selection) { document.selection.empty() }
+    }   
+  }
+
 
   // -------------------- CHROME STORAGE -----------------------
 
@@ -24,7 +31,7 @@ const logosContentInit = () => {
           if (chrome.runtime.lastError) { 
             reject(chrome.runtime.lastError) 
           } else {
-            objectIsEmpty(result) ? resolve(null) : resolve(result[key]);
+            utils.objectIsEmpty(result) ? resolve(null) : resolve(result[key]);
           }
         });
       });
@@ -41,15 +48,15 @@ const logosContentInit = () => {
 
       this._addHighlighterClass('yellow')
 
-      this.highlighter.addClassApplier(rangy.createClassApplier("rangy-highlight", {
+      this.highlighter.addClassApplier(rangy.createClassApplier("logos-highlight", {
         ignoreWhiteSpace: true,
         tagNames: ["span", "a"]
-      }));    
+      }));
     }
 
     _addHighlighterClass(color){
       const s = document.createElement('style');
-      const css = `.rangy-highlight { background-color: ${color} }`
+      const css = `.logos-highlight { background-color: ${color} }`
       s.setAttribute('type', 'text/css');
 
       if ('textContent' in s) {
@@ -66,7 +73,15 @@ const logosContentInit = () => {
     }
 
     highlightSelection() {
-      this.highlighter.highlightSelection("rangy-highlight");
+      this.highlighter.highlightSelection("logos-highlight");
+    }
+
+    addDataAttributeToSelectedElements(name, value){
+      var selectedElements = rangy.getSelection().getRangeAt(0).getNodes([1]);
+      const highlighted = selectedElements.forEach(el => {
+        if (!el.classList.contains('logos-highlight')) return
+        el.setAttribute(name, value);
+      })
     }
 
     serializeSelection(){
@@ -88,36 +103,156 @@ const logosContentInit = () => {
       this._init();
     }
 
-    async _saveSelection(serializedSelection){
-      const url = window.location.href;
-
-      const pageData = await this.storage.get(url);
-      
-      let newPageData;
-
-      pageData ? newPageData = { ...pageData, [serializedSelection]: {translation: ''} } : 
-        newPageData = { [serializedSelection]: { translation: ''} };
-      
-      return this.storage.set(url, newPageData)
+    _init(){
+      this._loadTranslationsAndHighlights();
+      this._initTranslationPopup();
     }
 
-    async _init(){
+    async _loadTranslationsAndHighlights(){
       const url = window.location.href;
 
       const pageData = await this.storage.get(url);
 
       if (pageData) {
-        Object.keys(pageData).forEach(key => {
-          this.rangy.deserializeSelection(key);
+        pageData.forEach(selectionEntry => {
+          this.rangy.deserializeSelection(selectionEntry.serializedSelection);
           this.rangy.highlightSelection();
         })
       }
+
+      utils.clearSelection();
+    }
+
+    _initTranslationPopup(){
+      const html = `
+        <div class="logos-container">
+          <h5 class="logos-title">λ</h5>
+          <textarea 
+            class="logos-translation-input" 
+            placeholder="Enter a custom translation..."
+            rows="3"
+          ></textarea>
+          <button type="button" class="logos-translation-submit-button">Save</button>
+        </div>
+      `;
+
+      const css = `
+        body, html {
+          padding: 0;
+          margin: 0;
+          overflow: hidden;
+        }
+
+        #logos-translation-popup {
+          display: block;
+          background-color: slategray;
+          font-family: monospace;
+          border-color: gray;
+        }
+
+        #logos-translation-popup .logos-container {
+          display: grid;
+          grid-template-columns: 1fr;
+        }
+
+        #logos-translation-popup .logos-title {
+          font-size: 12px;
+          line-height: 16px;
+          color: white;
+          margin: 0;
+          padding: 0 4px;
+          padding-top: 1px;
+          text-align: left;
+        }
+
+        #logos-translation-popup .logos-translation-input {
+          border-bottom: none;
+          border-color: inherit;
+        }
+
+        #logos-translation-popup .logos-translation-submit-button {
+        }
+
+      `;
+
+      const popup = document.createElement('div');
+      popup.id = 'logos-translation-popup';
+      popup.innerHTML = html
+
+      const style = document.createElement('style');
+      style.innerHTML = css;
+
+      const ifrm = document.createElement('iframe')
+      ifrm.id = 'logos-translation-popup';
+      ifrm.style.position = 'absolute';
+      ifrm.style.top = '0';
+      ifrm.style.padding = '0';
+      ifrm.style.zIndex = '16777271';
+    
+      document.body.appendChild(ifrm)
+
+      var doc = ifrm.contentWindow.document;
+
+      doc.head.appendChild(style);
+      doc.body.appendChild(popup);
+
+      ifrm.height = `${popup.offsetHeight}px`;
+
+      function handleTextAreaResize() {
+        let resizing = false
+
+        const resizeObserver = new ResizeObserver(entries => {
+          for (const entry of entries) {
+            if (entry.contentBoxSize) {
+              // TODO: handle edgecase for entry.contentBoxSize
+            } else {
+              if (resizing === false) {
+                resizing = true;
+                ifrm.width  = `${entry.contentRect.width + 4}px`;
+                ifrm.height = `${popup.offsetHeight + 4}px`;
+                setTimeout(() => resizing = false, 20)
+              }
+              
+            }
+          }
+        });
+
+        resizeObserver.observe(textarea);        
+      }
+
+      const textarea = doc.querySelector('.logos-translation-input');
+      handleTextAreaResize(textarea)
+
+      
+    }
+
+    async _saveSelection(serializedSelection, selectionText, translation){
+      const url = window.location.href;
+      const pageEntryArray = await this.storage.get(url);
+      const newPageEntry = { serializedSelection, selectionText, translation }
+      let newPageEntryArray;
+
+      pageEntryArray ? 
+        newPageEntryArray = [ ...pageEntryArray, newPageEntry ] : 
+        newPageEntryArray = [ newPageEntry ];
+      
+      return this.storage.set(url, newPageEntryArray)
     }
 
     highlight(){
+      const selectionText = this.rangy.getSelectionText()
       const serializedSelection = this.rangy.serializeSelection();
       this.rangy.highlightSelection();
-      return this._saveSelection(serializedSelection)
+      this.rangy.addDataAttributeToSelectedElements('data-logos-highlight', '');
+      return this._saveSelection(serializedSelection, selectionText, '')
+    }
+
+    translate(){
+      const selectionText = this.rangy.getSelectionText()
+      const serializedSelection = this.rangy.serializeSelection();
+      this.rangy.highlightSelection();
+      this.rangy.addDataAttributeToSelectedElements('data-logos-translation', translation);
+      return this._saveSelection(serializedSelection, selectionText, translation)
     }
   }
 
@@ -131,6 +266,7 @@ const logosContentInit = () => {
           logos.highlight().catch(console.error)
           break;
         case 'translate':
+          logos.translate().catch(console.error)
           break;
         default:
           return
