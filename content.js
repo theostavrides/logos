@@ -40,7 +40,7 @@ const logosContentInit = () => {
     }
   }
 
-  // ------------------------- RANGY ----------------------------
+  // ------------------------- RANGY ---------------------------
 
   class RangyWrapper {
     constructor() {
@@ -103,6 +103,15 @@ const logosContentInit = () => {
   // -------------------- TRANSLATION POPUP -------------------- 
 
   class TranslationPopup {
+
+    /* 
+      ### Public Methods ###
+      1. registerSaveTranslationHandler
+      2. open
+      3. close
+      4. save
+    */
+
     constructor(){
       this.popupElement = this._createPopupElement()
       this.styleElement = this._createPopupStyleElement();
@@ -112,6 +121,8 @@ const logosContentInit = () => {
       
       this._attachTextAreaResizeObserver()
       this._attachClickListener()
+
+      this.saveTranslationHandler = null;
     }
 
     _createPopupElement(){
@@ -200,6 +211,7 @@ const logosContentInit = () => {
           -ms-transition: all 0.30s ease-in-out;
           -o-transition: all 0.30s ease-in-out;
           border: none;
+          border-bottom: 1px solid #e3e3e3;
           outline: none;
         }
 
@@ -208,15 +220,20 @@ const logosContentInit = () => {
         textarea:focus::-moz-placeholder { color:transparent; }
         textarea:focus:-ms-input-placeholder { color:transparent; }
 
-        .translation-textarea:focus {
-          box-shadow: 0 0 3px rgba(54, 9, 235, 0.42)
-        }
+
 
         .save-button {
           border: none;
+          outline: none;
+          cursor: pointer;
           border-top: 1px solid grey;
           font-family: monospace;
           line-height: 20px;
+          background-color: #efefef;
+        }
+
+        .save-button:hover {
+          background-color: #ebebeb;
         }
 
       `;
@@ -282,8 +299,11 @@ const logosContentInit = () => {
         const classList = e.target.classList;
         if (classList.contains('close-icon')) this.close();
         else if (classList.contains('save-button')) this.save();
-
       })
+    }
+
+    registerSaveTranslationHandler(handler){
+      this.saveTranslationHandler = handler;
     }
 
     open({x, y}, cb){
@@ -293,25 +313,41 @@ const logosContentInit = () => {
     }
 
     close(){
+      const textarea = this.popupElement.querySelector('.translation-textarea');
+
       this.iframeElement.style.opacity = 0;
 
       setTimeout(() => {
         this.iframeElement.style.left = '-1000px';
+        textarea.value = '';
       }, 400)
     }
 
-    save(){}
+    save(){
+      const textarea = this.popupElement.querySelector('.translation-textarea')
+      const translation = textarea.value;
+      this.saveTranslationHandler(translation);
+      this.close();
+    }
   }
 
   // ------------------------- LOGOS ---------------------------
 
   class Logos {
+
+    /* 
+      ### Public Methods ###
+      1. highlight
+      2. addTranslation
+    */
+
     constructor(chromeStorageWrapper, rangyWrapper) {
       this.storage = chromeStorageWrapper;
       this.rangy = rangyWrapper;
 
       this._loadTranslationsAndHighlights();
-      this.translationPopup = new TranslationPopup
+      this.translationPopup = new TranslationPopup;
+      this.translationPopup.registerSaveTranslationHandler(this.saveTranslationHandler)
     }
 
     async _loadTranslationsAndHighlights(){
@@ -321,27 +357,41 @@ const logosContentInit = () => {
 
       if (pageData) {
         pageData.forEach(selectionEntry => {
-          this.rangy.deserializeSelection(selectionEntry.serializedSelection);
+          const { serializedSelection, translation } = selectionEntry;
+          this.rangy.deserializeSelection(serializedSelection);
           this.rangy.highlightSelection();
+
+          if (translation) {
+            this.rangy.addDataAttributeToSelectedElements('data-logos-translation', translation);
+          } else {
+            this.rangy.addDataAttributeToSelectedElements('data-logos-highlight', '');
+          }
         })
       }
 
       utils.clearSelection();
     }
 
-    
-
     async _saveSelection(serializedSelection, selectionText, translation){
       const url = window.location.href;
       const pageEntryArray = await this.storage.get(url);
-      const newPageEntry = { serializedSelection, selectionText, translation }
+      const newEntry = { serializedSelection, selectionText, translation }
       let newPageEntryArray;
 
       pageEntryArray ? 
-        newPageEntryArray = [ ...pageEntryArray, newPageEntry ] : 
-        newPageEntryArray = [ newPageEntry ];
+        newPageEntryArray = [ ...pageEntryArray, newEntry ] : 
+        newPageEntryArray = [ newEntry ];
       
       return this.storage.set(url, newPageEntryArray)
+    }
+
+    saveTranslationHandler = (translation) => {
+      const selectionText = this.rangy.getSelectionText();
+      const serializedSelection = this.rangy.serializeSelection();
+      this.rangy.highlightSelection();
+      this.rangy.addDataAttributeToSelectedElements('data-logos-translation', translation);
+      utils.clearSelection();
+      return this._saveSelection(serializedSelection, selectionText, translation)
     }
 
     highlight(){
@@ -349,20 +399,13 @@ const logosContentInit = () => {
       const serializedSelection = this.rangy.serializeSelection();
       this.rangy.highlightSelection();
       this.rangy.addDataAttributeToSelectedElements('data-logos-highlight', '');
+      utils.clearSelection();
       return this._saveSelection(serializedSelection, selectionText, '')
     }
 
     addTranslation(){
-      const saveTranslationClickHandler = () => {
-        const selectionText = this.rangy.getSelectionText();
-        const serializedSelection = this.rangy.serializeSelection();
-        this.rangy.highlightSelection();
-        this.rangy.addDataAttributeToSelectedElements('data-logos-translation', translation);
-        this._saveSelection(serializedSelection, selectionText, translation).catch(console.log)
-      }
-
       const targetPosition = this.rangy.getSelectionEndPosition()
-      this.translationPopup.open(targetPosition, saveTranslationClickHandler);
+      this.translationPopup.open(targetPosition);
     }
   }
 
@@ -384,12 +427,16 @@ const logosContentInit = () => {
     }
   }
 
-  const chromeStorageWrapper = new ChromeStorageWrapper();
-  const rangyWrapper = new RangyWrapper();
-  const logos = new Logos(chromeStorageWrapper, rangyWrapper); 
-  const msgHandler = createMsgHandler(logos);
+  const init = () => {
+    const chromeStorageWrapper = new ChromeStorageWrapper();
+    const rangyWrapper = new RangyWrapper();
+    const logos = new Logos(chromeStorageWrapper, rangyWrapper); 
+    const msgHandler = createMsgHandler(logos);
 
-  chrome.runtime.onMessage.addListener(msgHandler);
+    chrome.runtime.onMessage.addListener(msgHandler);    
+  }
+
+  init();
 }
 
 logosContentInit();
