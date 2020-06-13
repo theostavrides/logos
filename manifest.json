@@ -25,6 +25,7 @@
         "lib/rangy/rangy-classapplier.js",
         "lib/rangy/rangy-highlighter.js",
         "lib/rangy/rangy-serializer.js",
+        "lib/rangy/rangy-position.js",
         "content.js"
       ]
     }
