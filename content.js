@@ -139,6 +139,7 @@ const logosContentInit = () => {
       this.iframeElement = this._createPopupIframe();
       
       this.popup = this._initIframe();
+      this.textarea = this.popupElement.querySelector('.translation-textarea');
       
       this._attachTextAreaResizeObserver();
       this._attachClickListener();
@@ -331,22 +332,20 @@ const logosContentInit = () => {
       this.iframeElement.style.left = `${x - 150}px`;
       this.iframeElement.style.top = `${y + 10}px`;
       this.iframeElement.style.opacity = 1;
+      this.textarea.focus()
     }
 
     close(){
-      const textarea = this.popupElement.querySelector('.translation-textarea');
-
       this.iframeElement.style.opacity = 0;
 
       setTimeout(() => {
         this.iframeElement.style.left = '-1000px';
-        textarea.value = '';
+        this.textarea.value = '';
       }, 400);
     }
 
     save(){
-      const textarea = this.popupElement.querySelector('.translation-textarea');
-      const translation = textarea.value;
+      const translation = this.textarea.value;
       this.saveTranslationHandler(translation);
       this.close();
     }
@@ -403,14 +402,19 @@ const logosContentInit = () => {
           overflow: hidden;
         }
 
+        #popup {
+          display: inline-block;
+        }
+
         .tooltip {
           background-color: ${bgcolor};
           padding-right: 0;
           text-align: center;
           border-radius: 6px;
-          padding: 10px 5px;
+          padding: 10px 10px;
           position: relative;
           margin-top: 15px;
+          display: inline-block;
         }
 
         .text {
@@ -445,6 +449,7 @@ const logosContentInit = () => {
       iframe.style.zIndex = '16777271';
       iframe.style.WebkitTransition = 'opacity 0.3s';
       iframe.style.MozTransition = 'opacity 0.3s';
+      iframe.style.display = 'inline-block'
 
       return iframe;
     }
@@ -455,9 +460,8 @@ const logosContentInit = () => {
       const iframeDoc = this.iframeElement.contentWindow.document;
       iframeDoc.head.appendChild(this.styleElement);
       iframeDoc.body.appendChild(this.tooltipElement);
-
       const textElement = this.tooltipElement.querySelector('.text');
-      this.iframeElement.width = textElement.offsetWidth + "px";
+      // this.iframeElement.width = 200 + "px";
 
       return iframeDoc;
     }
@@ -556,7 +560,6 @@ const logosContentInit = () => {
           
           e.target.addEventListener('mouseout', e => {
             this.translationTooltip.close()
-            console.log('fired')
           }, {once: true})
 
           this.translationTooltip.setText(translation)
