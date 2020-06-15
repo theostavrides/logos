@@ -521,7 +521,7 @@ const logosContentInit = () => {
       const pageData = await this.storage.get(url);
 
       if (pageData) {
-        pageData.forEach(selectionEntry => {
+        pageData.translations.forEach(selectionEntry => {
           const { serializedSelection, translation } = selectionEntry;
           this.rangy.deserializeSelection(serializedSelection);
           this.rangy.highlightSelection();
@@ -538,16 +538,47 @@ const logosContentInit = () => {
     }
 
     async _saveSelection(serializedSelection, selectionText, translation){
-      const url = utils.getCleanUrl();
-      const pageEntryArray = await this.storage.get(url);
-      const newEntry = { serializedSelection, selectionText, translation };
-      let newPageEntryArray;
-
-      pageEntryArray ? 
-        newPageEntryArray = [ ...pageEntryArray, newEntry ] : 
-        newPageEntryArray = [ newEntry ];
+      /*
+        Data Struture
       
-      return this.storage.set(url, newPageEntryArray);
+        url: {
+          title: string,
+          translations: [
+            {
+              serializedSelection: string
+              selectionText: string
+              translation: string
+            }
+          ]
+        }
+      */
+
+      const url = utils.getCleanUrl();
+
+      const pageData = await this.storage.get(url);
+
+      const newTranslation = { serializedSelection, selectionText, translation };
+
+      let data;
+
+      if (pageData) {
+        data = {
+          ...pageData,
+          translations: [
+            ...pageData.translations,
+            newTranslation
+          ]
+        }
+      } else {
+        const title = document.head.querySelector('title').innerText || url;
+        console.log(document.head.querySelector('title').innerText)
+        data = {
+          title,
+          translations: [ newTranslation ]
+        }
+      }
+
+      return this.storage.set(url, data);
     }
 
     _addMouseOverListener(){
