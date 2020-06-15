@@ -1,0 +1,85 @@
+body {
+	margin: 0;
+	display: 0;
+	font-family: 'Roboto', sans-serif;
+	background-color: white;
+}
+
+header.logos-header {
+	text-align: left;
+	margin: 20px 0 24px 24px;
+}
+
+header.logos-header h1 {
+	letter-spacing: 2px;
+	font-size: 20px;
+	margin: 0;
+}
+
+header.logos-header h5 {
+	margin: 4px 0 0 0;
+	font-weight: normal;
+}
+
+.container {
+	margin: auto;
+	max-width: 500px;
+}
+
+.page-tile {
+	margin-bottom: 60px;
+	border: 1px solid #cdcdcd;
+	padding: 10px;
+	border-radius: 3px;
+	background-color: white;
+}
+
+.page-tile .title {
+	display: flex;
+	align-items: center;
+	text-decoration: none;
+	color: black;
+}
+
+.page-tile .title img {
+	width: 16px;
+	height: 16px;
+	margin-right: 5px;
+}
+
+.page-tile .title h3 {
+	margin: 0;
+	padding: 0;
+	line-height: 16px;
+}
+
+.page-tile .translations-container {
+	border: 1px solid #e6e6e6;
+	margin-top: 10px;
+}
+
+.page-tile .translations-container .row {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	padding: 10px;
+}
+
+.page-tile .translations-container .row p {
+	padding: 0;
+	margin: 0;
+}
+
+.page-tile .translations-container .row:nth-child(odd) {
+	background-color: #f1f7fb;
+}
+
+.page-tile .translations-container .row:nth-child(even) {
+	background-color: white;
+}
+
+/* General */
+
+.blur {
+	color: transparent;
+	text-shadow: 0 0 5px rgba(0,0,0,1);
+}
