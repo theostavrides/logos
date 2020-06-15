@@ -584,7 +584,7 @@ const logosContentInit = () => {
         }
       } else {
         const title = document.head.querySelector('title').innerText || url;
-        console.log(document.head.querySelector('title').innerText)
+
         data = {
           title,
           created: timestamp,
