@@ -41,7 +41,7 @@ header.logos-header h5 {
 
 .article-tile header .title {
 	display: flex;
-	align-items: center;
+	align-items: flex-start;
 	text-decoration: none;
 	color: black;
 }
