@@ -48,33 +48,40 @@ class Dashboard {
 	async init(){
 		this.storage = new ChromeStorageWrapper();
 		this.data = await this.storage.getAll();
-		this.pageTileContainer = document.querySelector('#page-tile-container')
+		this.articlesContainer = document.querySelector('#articles-container')
 		this.initPageTiles(this.data)
 	}
 
 	initPageTiles(data){
-		Object.entries(data).reverse().forEach(([url, selectionArray]) => { 
-			this.createPageTile({ url, selectionArray })
-		})
+		Object.entries(data)
+			.sort((a,b) => b[1].lastUpdated - a[1].lastUpdated)
+			.forEach(entry => this.createPageTile(entry))
 	}
 
-	createPageTile({ url, selectionArray }){
-		const template = document.querySelector('#page-tile-template');
-		const pageTile = template.content.cloneNode(true);
-		
-		const renderTitle = (tile) => {
-			const title = tile.querySelector('.title');
-			const heading = title.querySelector('h3');
-			const favicon = title.querySelector('img');
+	createPageTile([url, data]){
+		const { title, translations } = data;
 
-			title.href = url;
-			favicon.src = `https://s2.googleusercontent.com/s2/favicons?domain=${url}`			
+		const template = document.querySelector('#article-template');
+		const tile = template.content.cloneNode(true);
+		
+		const renderHeader = ({ tile, url, title }) => {
+			const titleElement = tile.querySelector('.title');
+			const heading = titleElement.querySelector('h3');
+			const favicon = titleElement.querySelector('img');
+
+			const headingTextNode = document.createTextNode(title); 
+			heading.appendChild(headingTextNode);
+
+			titleElement.href = url;
+			titleElement.title = title;
+
+			favicon.src = `https://s2.googleusercontent.com/s2/favicons?domain=${url}`;			
 		}
 
-		const renderTanslationRows = (tile) => {
+		const renderTanslationRows = (tile, translations) => {
 			const trananslationsContainer = tile.querySelector('.translations-container')
 
-			selectionArray.forEach(({ selectionText, translation }) => {
+			translations.forEach(({ selectionText, translation }) => {
 				const row = document.createElement('div')
 				row.classList.add('row')
 
@@ -95,11 +102,11 @@ class Dashboard {
 
 
 
-		renderTitle(pageTile);
-		renderTanslationRows(pageTile);
+		renderHeader({ tile, url, title });
+		renderTanslationRows(tile, translations);
 
 
-		this.pageTileContainer.appendChild(pageTile);
+		this.articlesContainer.appendChild(tile);
 	}
 }
 
