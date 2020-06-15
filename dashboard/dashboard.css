@@ -10,6 +10,10 @@ header.logos-header {
 	margin: 20px 0 24px 24px;
 }
 
+header.logos-header .title-wrapper {
+	display: inline-block;
+}
+
 header.logos-header h1 {
 	letter-spacing: 2px;
 	font-size: 20px;
@@ -27,7 +31,7 @@ header.logos-header h5 {
 	max-width: 500px;
 }
 
-.page-tile {
+.article-tile {
 	margin-bottom: 60px;
 	border: 1px solid #cdcdcd;
 	padding: 10px;
@@ -35,48 +39,48 @@ header.logos-header h5 {
 	background-color: white;
 }
 
-.page-tile .title {
+.article-tile header .title {
 	display: flex;
 	align-items: center;
 	text-decoration: none;
 	color: black;
 }
 
-.page-tile .title img {
+.article-tile header .title img {
 	width: 16px;
 	height: 16px;
 	margin-right: 5px;
 }
 
-.page-tile .title h3 {
+.article-tile header .title h3 {
 	margin: 0;
 	padding: 0;
 	line-height: 16px;
 	font-size: 15px;
 }
 
-.page-tile .translations-container {
+.article-tile .translations-container {
 	border: 1px solid #e6e6e6;
 	margin-top: 10px;
 }
 
-.page-tile .translations-container .row {
+.article-tile .translations-container .row {
 	display: grid;
 	grid-template-columns: 1fr 1fr;
 	padding: 10px;
 }
 
-.page-tile .translations-container .row p {
+.article-tile .translations-container .row p {
 	padding: 0;
 	margin: 0;
 	font-size: 14px;
 }
 
-.page-tile .translations-container .row:nth-child(odd) {
+.article-tile .translations-container .row:nth-child(odd) {
 	background-color: #f1f7fb;
 }
 
-.page-tile .translations-container .row:nth-child(even) {
+.article-tile .translations-container .row:nth-child(even) {
 	background-color: white;
 }
 
