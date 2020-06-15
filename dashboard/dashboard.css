@@ -14,10 +14,11 @@ header.logos-header h1 {
 	letter-spacing: 2px;
 	font-size: 20px;
 	margin: 0;
+	border-bottom: 1px solid grey;
 }
 
 header.logos-header h5 {
-	margin: 4px 0 0 0;
+	margin: 3px 0 0 0;
 	font-weight: normal;
 }
 
@@ -51,6 +52,7 @@ header.logos-header h5 {
 	margin: 0;
 	padding: 0;
 	line-height: 16px;
+	font-size: 15px;
 }
 
 .page-tile .translations-container {
@@ -67,6 +69,7 @@ header.logos-header h5 {
 .page-tile .translations-container .row p {
 	padding: 0;
 	margin: 0;
+	font-size: 14px;
 }
 
 .page-tile .translations-container .row:nth-child(odd) {
