@@ -505,36 +505,43 @@ const logosContentInit = () => {
     constructor(chromeStorageWrapper, rangyWrapper) {
       this.storage = chromeStorageWrapper;
       this.rangy = rangyWrapper;
-
-      this._loadTranslationsAndHighlights();
-      this._addMouseOverListener();
-
       this.translationPopup = new TranslationPopup;
       this.translationPopup.registerSaveTranslationHandler(this.saveTranslationHandler);
-
       this.translationTooltip = new TranslationTooltip();
+      this._loadTranslationsAndHighlights()
     }
 
     async _loadTranslationsAndHighlights(){
-      const url = utils.getCleanUrl();
+      let attempts = 0;
+      try {
+        const url = utils.getCleanUrl();
 
-      const pageData = await this.storage.get(url);
+        const pageData = await this.storage.get(url);
 
-      if (pageData) {
-        pageData.translations.forEach(selectionEntry => {
-          const { serializedSelection, translation } = selectionEntry;
-          this.rangy.deserializeSelection(serializedSelection);
-          this.rangy.highlightSelection();
+        if (pageData) {
+          pageData.translations.forEach(selectionEntry => {
+            const { serializedSelection, translation } = selectionEntry;
+            this.rangy.deserializeSelection(serializedSelection);
+            this.rangy.highlightSelection();
 
-          if (translation) {
-            this.rangy.addDataAttributeToSelectedElements('data-logos-translation', translation);
-          } else {
-            this.rangy.addDataAttributeToSelectedElements('data-logos-highlight', '');
-          }
-        })
+            if (translation) {
+              this.rangy.addDataAttributeToSelectedElements('data-logos-translation', translation);
+            } else {
+              this.rangy.addDataAttributeToSelectedElements('data-logos-highlight', '');
+            }
+          })
+        }
+
+        utils.clearSelection();
+
+        this._addMouseOverListener();
+      } catch(e) {
+        console.error('failed to load logos, trying again in 1 second')
+        if (attempts < 5) {
+          setTimeout(() => this._loadTranslationsAndHighlights(), 1000)
+        }
+        attempts++;
       }
-
-      utils.clearSelection();
     }
 
     async _saveSelection(serializedSelection, selectionText, translation){
@@ -543,6 +550,8 @@ const logosContentInit = () => {
       
         url: {
           title: string,
+          created: number (miliseconds since epoch),
+          lastUpdated: number (miliseconds since epoch),
           translations: [
             {
               serializedSelection: string
@@ -559,11 +568,15 @@ const logosContentInit = () => {
 
       const newTranslation = { serializedSelection, selectionText, translation };
 
+      const now = new Date();
+      const timestamp = now.getTime();
+
       let data;
 
       if (pageData) {
         data = {
           ...pageData,
+          lastUpdated: timestamp,
           translations: [
             ...pageData.translations,
             newTranslation
@@ -574,6 +587,8 @@ const logosContentInit = () => {
         console.log(document.head.querySelector('title').innerText)
         data = {
           title,
+          created: timestamp,
+          lastUpdated: timestamp,
           translations: [ newTranslation ]
         }
       }
