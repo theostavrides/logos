@@ -7,30 +7,29 @@
 </head>
 <body>
 	<header class="logos-header">
-		<div style="display: inline-block;">
-		<h1>LOGOS</h1>
+		<div class="title-wrapper">
+			<h1>LOGOS</h1>
 		</div>
 		<h5>language learning tool</h5>
 	</header>
 
 	<div class="container">
-		<main>
-			<div id="page-tile-container">
-				
-			</div>
+		<main id="articles-container">
 		</main>
 	</div>
 
-	<template id="page-tile-template">
-		<div class="page-tile">
-			<a class="title" href="www.example.com" target="_blank">
-				<img class="page-favicon" src="https://picsum.photos/16/16">
-				<h3>Page Title</h3>
-			</a>
+	<template id="article-template">
+		<article class="article-tile">
+			<header>
+				<a class="title" title="This is some text I want to display." href="www.example.com" target="_blank">
+					<img class="page-favicon" src="https://picsum.photos/16/16">
+					<h3>Page Title</h3>
+				</a>
+			</header>
 			
 			<div class="translations-container">
 			</div>
-		</div>
+		</article>
 	</template>
 
 	<script type="text/javascript" src="dashboard.js"></script>
