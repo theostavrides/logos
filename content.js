@@ -511,37 +511,43 @@ const logosContentInit = () => {
       this._loadTranslationsAndHighlights()
     }
 
-    async _loadTranslationsAndHighlights(){
+    _loadTranslationsAndHighlights(){
       let attempts = 0;
-      try {
-        const url = utils.getCleanUrl();
+      const init = async () => { 
+        try {
+          attempts += 1;
 
-        const pageData = await this.storage.get(url);
+          const url = utils.getCleanUrl();
 
-        if (pageData) {
-          pageData.translations.forEach(selectionEntry => {
-            const { serializedSelection, translation } = selectionEntry;
-            this.rangy.deserializeSelection(serializedSelection);
-            this.rangy.highlightSelection();
+          const pageData = await this.storage.get(url);
 
-            if (translation) {
-              this.rangy.addDataAttributeToSelectedElements('data-logos-translation', translation);
-            } else {
-              this.rangy.addDataAttributeToSelectedElements('data-logos-highlight', '');
-            }
-          })
+          if (pageData) {
+            pageData.translations.forEach(selectionEntry => {
+              const { serializedSelection, translation } = selectionEntry;
+              this.rangy.deserializeSelection(serializedSelection);
+              this.rangy.highlightSelection();
+
+              if (translation) {
+                this.rangy.addDataAttributeToSelectedElements('data-logos-translation', translation);
+              } else {
+                this.rangy.addDataAttributeToSelectedElements('data-logos-highlight', '');
+              }
+            })
+          }
+
+          utils.clearSelection();
+
+          this._addMouseOverListener();
+        } catch(e) {
+          console.log(e)
+          console.error('failed to load logos, trying again in 1 second')
+          
+          if (attempts < 5) {
+            setTimeout(() => init(), 1000)
+          }     
         }
-
-        utils.clearSelection();
-
-        this._addMouseOverListener();
-      } catch(e) {
-        console.error('failed to load logos, trying again in 1 second')
-        if (attempts < 5) {
-          setTimeout(() => this._loadTranslationsAndHighlights(), 1000)
-        }
-        attempts++;
       }
+      init();
     }
 
     async _saveSelection(serializedSelection, selectionText, translation){
