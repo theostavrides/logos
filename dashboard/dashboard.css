@@ -76,6 +76,10 @@ header.logos-header h5 {
 	font-size: 14px;
 }
 
+.article-tile .translations-container .row p:first-child {
+	padding-right: 10px;
+}
+
 .article-tile .translations-container .row:nth-child(odd) {
 	background-color: #f1f7fb;
 }
